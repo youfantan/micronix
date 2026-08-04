@@ -1,59 +1,67 @@
 /**
   ******************************************************************************
-  * @file      startup.s
-  * @brief     STM32G030C8 device vector table for the arm-none-eabi toolchain.
-  *
+  * @file      startup_stm32g030xx.s
+  * @author    MCD Application Team
+  * @brief     STM32G030xx devices vector table GCC toolchain.
   *            This module performs:
   *                - Set the initial SP
   *                - Set the initial PC == Reset_Handler,
   *                - Set the vector table entries with the exceptions ISR address
-  *                - Branches to boot
-  *
+  *                - Branches to main in the C library (which eventually
+  *                  calls main()).
   *            After Reset the Cortex-M0+ processor is in Thread mode,
   *            priority is Privileged, and the Stack is set to Main.
+  ******************************************************************************
+  * @attention
   *
-  *            Vector table and IRQ numbering match STM32G030x6/x8
-  *            (STM32G030C8: 64 KB flash, 8 KB SRAM, Cortex-M0+).
+  * Copyright (c) 2018-2021 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
   ******************************************************************************
   */
 
-  .syntax unified
-  .cpu cortex-m0plus
-  .fpu softvfp
-  .thumb
+.syntax unified
+.cpu cortex-m0plus
+.fpu softvfp
+.thumb
 
-  .global g_pfnVectors
-  .global Default_Handler
+.global g_pfnVectors
+.global Default_Handler
 
 /* start address for the initialization values of the .data section.
-   defined in linker script */
-  .word _sidata
+defined in linker script */
+.word _sidata
 /* start address for the .data section. defined in linker script */
-  .word _sdata
+.word _sdata
 /* end address for the .data section. defined in linker script */
-  .word _edata
+.word _edata
 /* start address for the .bss section. defined in linker script */
-  .word _sbss
+.word _sbss
 /* end address for the .bss section. defined in linker script */
-  .word _ebss
+.word _ebss
 
 /**
  * @brief  This is the code that gets called when the processor first
- *         starts execution following a reset event. Only the absolutely
- *         necessary set is performed, after which the application
- *         supplied boot() routine is called.
+ *          starts execution following a reset event. Only the absolutely
+ *          necessary set is performed, after which the application
+ *          supplied main() routine is called.
  * @param  None
  * @retval None
 */
+
   .section .text.Reset_Handler
   .weak Reset_Handler
   .type Reset_Handler, %function
 Reset_Handler:
   ldr   r0, =_estack
-  mov   sp, r0                 /* set stack pointer */
+  mov   sp, r0          /* set stack pointer */
 
-/* Call the clock system initialization function. */
-  bl SystemInit
+/* Call the clock system initialization function.*/
+  bl  system_init
 
 /* Copy the data segment initializers from flash to SRAM */
   ldr r0, =_sdata
@@ -79,44 +87,24 @@ LoopCopyDataInit:
   b LoopFillZerobss
 
 FillZerobss:
-  str r3, [r2]
+  str  r3, [r2]
   adds r2, r2, #4
 
 LoopFillZerobss:
   cmp r2, r4
   bcc FillZerobss
 
-/* Call static constructors (__libc_init_array), when available. */
-  .weak __libc_init_array
-  ldr r0, =__libc_init_array
-  cmp r0, #0
-  beq 1f
-  blx r0
-1:
-
-/* Call the application's entry point. */
-  bl boot
+/* Call the application s entry point.*/
+  bl kernel_init
 
 LoopForever:
   b LoopForever
 
-  .size Reset_Handler, .-Reset_Handler
-
-/**
- * @brief  Weak SystemInit implementation so the startup file can link without
- *         a system_stm32g0xx.c. A strongly defined SystemInit in the
- *         application overrides this weak default.
- */
-  .section .text.SystemInit, "ax", %progbits
-  .weak SystemInit
-  .type SystemInit, %function
-SystemInit:
-  bx lr
-  .size SystemInit, .-SystemInit
+.size Reset_Handler, .-Reset_Handler
 
 /**
  * @brief  This is the code that gets called when the processor receives an
- *         unexpected interrupt. This simply enters an infinite loop, preserving
+ *         unexpected interrupt.  This simply enters an infinite loop, preserving
  *         the system state for examination by a debugger.
  *
  * @param  None
@@ -130,7 +118,7 @@ Infinite_Loop:
 
 /******************************************************************************
 *
-* The minimal vector table for a Cortex-M0+. Note that the proper constructs
+* The minimal vector table for a Cortex M0.  Note that the proper constructs
 * must be placed on this to ensure that it ends up at physical address
 * 0x0000.0000.
 *
@@ -166,9 +154,9 @@ g_pfnVectors:
   .word 0                                 /* reserved                     */
   .word DMA1_Channel1_IRQHandler          /* DMA1 Channel 1               */
   .word DMA1_Channel2_3_IRQHandler        /* DMA1 Channel 2 and Channel 3 */
-  .word DMA1_Ch4_5_DMAMUX1_OVR_IRQHandler /* DMA1 Channel 4 to 5, DMAMUX1 */
+  .word DMA1_Ch4_5_DMAMUX1_OVR_IRQHandler /* DMA1 Channel 4 to Channel 5, DMAMUX1 overrun */
   .word ADC1_IRQHandler                   /* ADC1                         */
-  .word TIM1_BRK_UP_TRG_COM_IRQHandler    /* TIM1 Break, Update, Trigger  */
+  .word TIM1_BRK_UP_TRG_COM_IRQHandler    /* TIM1 Break, Update, Trigger and Commutation */
   .word TIM1_CC_IRQHandler                /* TIM1 Capture Compare         */
   .word 0                                 /* reserved                     */
   .word TIM3_IRQHandler                   /* TIM3                         */
@@ -279,5 +267,3 @@ g_pfnVectors:
 
   .weak      USART2_IRQHandler
   .thumb_set USART2_IRQHandler,Default_Handler
-
-  .end
