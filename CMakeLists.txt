@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
-project(micronix C CXX ASM)
+project(micronix CXX ASM)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
@@ -29,7 +29,7 @@ target_sources(app-test PRIVATE
         os/exception.cpp
         os/sched.cpp
         os/slab_alloc.cpp
-        test/main.c
+        test/main.cpp
 )
 
 target_link_options(app-test PRIVATE
