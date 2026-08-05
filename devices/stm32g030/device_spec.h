@@ -24,6 +24,7 @@ __STATIC_INLINE void __disable_irq(void){ __ASM volatile ("cpsid i"); }
 struct RegisterFieldDescriptor {
     u8 off;
     u8 len;
+    u8 access;
 };
 
 template<uint32_t ADDR, RegisterFieldDescriptor RFD>

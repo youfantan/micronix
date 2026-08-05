@@ -8,9 +8,9 @@ static void delay_nop(uint32_t count);
 int main() {
     SystemClock_Config();
     RCC::IOPENR::GPIOAEN = 0x01;
-    GPIOA::MODER::MODE6 = 0x01;
+    GPIOA::MODER::MODER6 = 0x01;
     GPIOA::OTYPER::OT6 = 0x00;
-    GPIOA::OSPEEDR::OSPEED6 = 0x04;
+    GPIOA::OSPEEDR::OSPEEDR6 = 0x04;
     while (true) {
         GPIOA::BSRR::BS6 = 0x01;
         delay_nop(1000UL);

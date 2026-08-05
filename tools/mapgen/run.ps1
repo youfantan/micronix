@@ -1,1 +1,0 @@
-python .\peripheral_map_gen.py ..\..\devices\stm32g030\register_spec | Out-File -Encoding utf8 ..\..\devices\stm32g030\register_spec.h
