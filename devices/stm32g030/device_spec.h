@@ -30,12 +30,20 @@ struct RegisterFieldDescriptor {
 template<uint32_t ADDR, RegisterFieldDescriptor RFD>
 struct RegisterField {
     const RegisterField& operator=(u32 value) const {
-        *reinterpret_cast<volatile uint32_t*>(ADDR) = (*reinterpret_cast<volatile uint32_t*>(ADDR) & ~mask) | ((value << RFD.off) & mask);
+        Set(value);
         return *this;
     }
 
     operator uint32_t() const {
-        return (*reinterpret_cast<volatile uint32_t*>(ADDR) & ~mask) >> RFD.off;
+        return Get();
+    }
+
+    void Set(uint32_t value) const {
+        *reinterpret_cast<volatile uint32_t*>(ADDR) = (*reinterpret_cast<volatile uint32_t*>(ADDR) & ~mask) | ((value << RFD.off) & mask);
+    }
+
+    uint32_t Get() const {
+        return (*reinterpret_cast<volatile uint32_t*>(ADDR) & mask) >> RFD.off;
     }
 private:
     constexpr static uint32_t mask = (0xFFFFFFFF >> (32 - RFD.len)) << RFD.off;

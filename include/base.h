@@ -15,13 +15,22 @@ typedef long long i64;
 // exported types
 
 typedef struct {
+    u32 fsysclk;
+    u32 fpclk;
+    u32 fqclk;
+} system_profile;
+
+typedef struct {
+    u8 use_crystal_osc;
+    u8 pllp_div;
+    u8 pllq_div;
+    u8 pllr_div;
+} clock_profile;
+
+typedef struct {
     u32 block_size;
     u32 slots;
 } slab_profile;
-
-typedef struct {
-    u32 fcpu;
-} timer_profile;
 
 typedef struct {
     u32 tick_high;
@@ -66,7 +75,7 @@ void sched_recovery_switching();
 void exception_initialize();
 void exception_throw();
 
-void timer_initialize(timer_profile* profile);
+void timer_initialize();
 void timer_sleep(tick ticks);
 tick timer_now();
 u32 timer_ticks_to_ms(tick* t);

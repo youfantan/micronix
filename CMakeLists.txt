@@ -36,4 +36,8 @@ target_link_options(app-test PRIVATE
         -T ${DEVICE_DIR}/app.ld
 )
 
+target_link_libraries(app-test PRIVATE
+        gcc
+)
+
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
