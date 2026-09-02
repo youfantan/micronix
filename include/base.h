@@ -28,6 +28,19 @@ typedef struct {
     u32 tick_low;
 } tick;
 
+enum oscillator_type {
+    external_crystal_oscillator,
+    internal_rc_oscillator
+};
+
+typedef struct {
+    oscillator_type osc_type;
+    u32 base_freq;
+    u32 mp_factor;
+    u32 pll_p;
+    u32 pll_q;
+} clock_profile;
+
 typedef void* handle;
 
 // exported functions
@@ -66,8 +79,8 @@ void sched_recovery_switching();
 void exception_initialize();
 void exception_throw();
 
-void timer_initialize();
-void timer_sleep(tick ticks);
+void timer_initialize(const clock_profile* clk_prof);
+void timer_sleep(u32 us);
 tick timer_now();
 u32 timer_ticks_to_ms(tick* t);
 u32 timer_ticks_to_us(tick* t);

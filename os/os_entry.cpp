@@ -6,9 +6,6 @@
 
 extern int main();
 
-volatile u32 HighTicks = 0;
-volatile u32 LowTicks = 0;
-
 extern "C" {
 
 void system_init() {
@@ -16,20 +13,10 @@ void system_init() {
 }
 
 int kernel_init() {
+    timer_initialize(&clk_cfg);
     slab_initialize();
     main();
     return 0;
-}
-
-void timer_initialize() {
-}
-
-void SysTick_Handler() {
-    LowTicks += 1;
-    if (LowTicks == 0xFFFFFFFFul) {
-        HighTicks += 1;
-        LowTicks = 0;
-    }
 }
 
 void* memset(void* dst, int val, u32 len) {

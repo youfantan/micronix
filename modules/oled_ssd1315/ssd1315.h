@@ -155,18 +155,32 @@ public:
     }
 
     struct FloatDrawable {
-        FloatDrawable(float f, u32 digits) {
+        FloatDrawable(float f, u32 integer_digits, u32 float_digits) {
             str_ = nullptr;
             len_ = 0;
+            if (integer_digits > 18) {
+                integer_digits = 18;
+            }
+            if (float_digits > 18) {
+                float_digits = 18;
+            }
+            const u32 need = 1 + integer_digits + (float_digits > 0 ? 1 + float_digits : 0);
+            u8* buf = static_cast<u8*>(slab_alloc(need));
+            if (buf == nullptr) {
+                return;
+            }
+            str_ = buf;
+            len_ = need;
             bool neg = f < 0.0f;
             if (neg) {
                 f = -f;
             }
-            if (digits > 18) {
-                digits = 18;
+            unsigned long long ipow = 1;
+            for (u32 i = 0; i < integer_digits; ++i) {
+                ipow *= 10;
             }
             unsigned long long scale = 1;
-            for (u32 i = 0; i < digits; ++i) {
+            for (u32 i = 0; i < float_digits; ++i) {
                 scale *= 10;
             }
             double scaled = static_cast<double>(f) * static_cast<double>(scale) + 0.5;
@@ -176,37 +190,25 @@ public:
             unsigned long long v = static_cast<unsigned long long>(scaled);
             unsigned long long ip = v / scale;
             unsigned long long fp = v % scale;
-            char idigits[24];
-            u32 ic = 0;
-            do {
-                idigits[ic++] = static_cast<char>('0' + ip % 10);
-                ip /= 10;
-            } while (ip > 0);
-            const u32 need = (neg ? 1 : 0) + ic + (digits > 0 ? 1 + digits : 0);
-            u8* buf = static_cast<u8*>(slab_alloc(need));
-            if (buf == nullptr) {
-                return;
+            if (ip >= ipow) {
+                ip = ipow - 1;
+                fp = scale - 1;
             }
             u32 w = 0;
-            if (neg) {
-                buf[w++] = '-';
+            buf[w++] = neg ? static_cast<u8>('-') : static_cast<u8>(' ');
+            for (u32 i = integer_digits; i > 0; --i) {
+                buf[w + i - 1] = static_cast<u8>('0' + ip % 10);
+                ip /= 10;
             }
-            for (u32 i = ic; i > 0; --i) {
-                buf[w++] = static_cast<u8>(idigits[i - 1]);
-            }
-            if (digits > 0) {
+            w += integer_digits;
+            if (float_digits > 0) {
                 buf[w++] = '.';
-                for (u32 i = 0; i < digits; ++i) {
-                    buf[w + i] = '0';
-                }
-                for (u32 i = digits; i > 0 && fp > 0; --i) {
+                for (u32 i = float_digits; i > 0; --i) {
                     buf[w + i - 1] = static_cast<u8>('0' + fp % 10);
                     fp /= 10;
                 }
-                w += digits;
+                w += float_digits;
             }
-            str_ = buf;
-            len_ = w;
         }
 
         u32 Length() {

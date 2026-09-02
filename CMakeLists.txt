@@ -32,6 +32,7 @@ target_sources(app-test PRIVATE
         os/exception.cpp
         os/sched.cpp
         os/slab_alloc.cpp
+        os/timer.cpp
         test/main.cpp
 )
 

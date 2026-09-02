@@ -12,13 +12,13 @@ static inline void __disable_irq(void){ __asm volatile ("cpsid i"); }
 
 #include "register_spec.h"
 
-enum class OscillatorType {
+enum class oscillator_type {
     external_crystal_oscillator,
     internal_rc_oscillator
 };
 
 struct ClockConfig {
-    OscillatorType osc_type;
+    oscillator_type osc_type;
     u32 base_freq;
     u32 mp_factor;
     u32 pll_p;
@@ -30,7 +30,7 @@ static void ClockInitialize() {
     static_assert(CFG.mp_factor * CFG.base_freq <= 64000000);
     if constexpr(CFG.mp_factor == 1) {
         // Use oscillator as clock source
-        if constexpr (CFG.osc_type == OscillatorType::internal_rc_oscillator) {
+        if constexpr (CFG.osc_type == oscillator_type::internal_rc_oscillator) {
             // Enable HSI
             RCC::CR::HSION = true;
             while (RCC::CR::HSIRDY == false) {}
@@ -59,7 +59,7 @@ static void ClockInitialize() {
         // Stop PLL(openocd may start PLL to boost flash)
         RCC::CR::PLLON = false;
         // Set PLL Vco to 128MHz
-        if (CFG.osc_type == OscillatorType::external_crystal_oscillator) {
+        if (CFG.osc_type == oscillator_type::external_crystal_oscillator) {
             // Enable HSE, HSE must be 8MHz
             RCC::CR::HSEON = 0x01;
             while (RCC::CR::HSERDY == 0x00) {}
@@ -84,6 +84,15 @@ static void ClockInitialize() {
             RCC::PLLCFGR::PLLP = CFG.pll_p;
             RCC::PLLCFGR::PLLPEN = true;
         }
+        // Set flash wait states for the target SYSCLK before switching to PLL
+        if constexpr (CFG.mp_factor * CFG.base_freq <= 24000000) {
+            FLASH::ACR::LATENCY = 0x00;
+        } else if constexpr (CFG.mp_factor * CFG.base_freq <= 48000000) {
+            FLASH::ACR::LATENCY = 0x01;
+        } else {
+            FLASH::ACR::LATENCY = 0x02;
+        }
+        FLASH::ACR::PRFTEN = true;
         // Enable PLL
         RCC::CR::PLLON = true;
         while (RCC::CR::PLLRDY == false) {}

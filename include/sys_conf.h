@@ -1,8 +1,8 @@
 #include <base.h>
 #include <device_spec.h>
 
-constexpr static ClockConfig clk_cfg {
-    .osc_type = OscillatorType::external_crystal_oscillator,
+constexpr static clock_profile clk_cfg {
+    .osc_type = oscillator_type::external_crystal_oscillator,
     .base_freq = 8000000,
     .mp_factor = 8,
     .pll_p = 0,

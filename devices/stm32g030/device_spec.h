@@ -1,36 +1,21 @@
 #pragma once
 
-#define RAM_BASE_ADDRESS 0x20000000
-#define RAM_SIZE 0x2000
-
 #include <base.h>
+#include <register_spec.h>
 
 static inline void __NOP(void)        { __asm volatile ("nop"); }
 static inline void __WFI(void)        { __asm volatile ("wfi"); }
 static inline void __enable_irq(void) { __asm volatile ("cpsie i"); }
 static inline void __disable_irq(void){ __asm volatile ("cpsid i"); }
 
-#include "register_spec.h"
 
-enum class OscillatorType {
-    external_crystal_oscillator,
-    internal_rc_oscillator
-};
-
-struct ClockConfig {
-    OscillatorType osc_type;
-    u32 base_freq;
-    u32 mp_factor;
-    u32 pll_p;
-    u32 pll_q;
-};
-
-template<ClockConfig CFG>
+template<clock_profile CFG>
 static void ClockInitialize() {
+    static_assert(CFG.mp_factor > 0);
     static_assert(CFG.mp_factor * CFG.base_freq <= 64000000);
     if constexpr(CFG.mp_factor == 1) {
         // Use oscillator as clock source
-        if constexpr (CFG.osc_type == OscillatorType::internal_rc_oscillator) {
+        if constexpr (CFG.osc_type == oscillator_type::internal_rc_oscillator) {
             // Enable HSI
             RCC::CR::HSION = true;
             while (RCC::CR::HSIRDY == false) {}
@@ -59,7 +44,7 @@ static void ClockInitialize() {
         // Stop PLL(openocd may start PLL to boost flash)
         RCC::CR::PLLON = false;
         // Set PLL Vco to 128MHz
-        if constexpr (CFG.osc_type == OscillatorType::external_crystal_oscillator) {
+        if constexpr (CFG.osc_type == external_crystal_oscillator) {
             // Enable HSE, HSE must be 8MHz
             RCC::CR::HSEON = 0x01;
             while (RCC::CR::HSERDY == 0x00) {}
@@ -84,6 +69,15 @@ static void ClockInitialize() {
             RCC::PLLSYSCFGR::PLLP = CFG.pll_p;
             RCC::PLLSYSCFGR::PLLPEN = true;
         }
+        // Set flash wait states for the target SYSCLK before switching to PLL
+        if constexpr (CFG.mp_factor * CFG.base_freq <= 24000000) {
+            FLASH::ACR::LATENCY = 0x00;
+        } else if constexpr (CFG.mp_factor * CFG.base_freq <= 48000000) {
+            FLASH::ACR::LATENCY = 0x01;
+        } else {
+            FLASH::ACR::LATENCY = 0x02;
+        }
+        FLASH::ACR::PRFTEN = true;
         // Enable PLL
         RCC::CR::PLLON = true;
         while (RCC::CR::PLLRDY == false) {}
@@ -373,5 +367,12 @@ template<RegisterField RCCENR, typename _ADC>
 struct ADCSampler {
     ADCSampler() {
         RCCENR = true;
+    }
+};
+
+template<RegisterField RCCENR, typename _TIM>
+struct PWMGenerator {
+    PWMGenerator(u32 freq) {
+
     }
 };
