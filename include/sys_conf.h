@@ -1,5 +1,6 @@
+#pragma once
+
 #include <base.h>
-#include <device_spec.h>
 
 constexpr static clock_profile clk_cfg {
     .osc_type = oscillator_type::external_crystal_oscillator,

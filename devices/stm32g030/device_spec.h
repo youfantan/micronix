@@ -1,7 +1,10 @@
 #pragma once
 
 #include <base.h>
+#include <type_traits>
 #include <register_spec.h>
+
+#include <sys_conf.h>
 
 static inline void __NOP(void)        { __asm volatile ("nop"); }
 static inline void __WFI(void)        { __asm volatile ("wfi"); }
@@ -372,7 +375,65 @@ struct ADCSampler {
 
 template<RegisterField RCCENR, typename _TIM>
 struct PWMGenerator {
+    using TIM = _TIM;
+    
     PWMGenerator(u32 freq) {
-
+        RCCENR = true;
+        u32 pclk = clk_cfg.base_freq * clk_cfg.mp_factor;
+        u32 div = pclk / freq;
+        u32 psc = 0;
+        while (div / (psc + 1) > 0xFFFF) ++psc;
+        TIM::PSC::PSCV = psc;
+        TIM::ARR::ARRV = div / (psc + 1) - 1;
+        arr_ = TIM::ARR::ARRV;
+        TIM::CR1::CEN = true;
+        if constexpr (std::is_same_v<TIM, TIM1>) {
+            TIM1::BDTR::MOE = true;
+        }
     }
+
+    template<u32 N>
+    void EnableChannel() {
+        static_assert(N != 0);
+        if constexpr (N == 1) {
+            TIM::CCMR1_Output::CC1S = 0x00; // Output
+            TIM::CCMR1_Output::OC1M = 0x06; // PWM Mode 1
+            TIM::CCER::CC1E = true;
+            TIM::CCER::CC1P = 0x00; // Positive duty
+        } else if (N == 2) {
+            TIM::CCMR1_Output::CC2S = 0x00;
+            TIM::CCMR1_Output::OC2M = 0x06;
+            TIM::CCER::CC2E = true;
+            TIM::CCER::CC2P = 0x00;
+        } else if (N == 3) {
+            TIM::CCMR2_Output::CC3S = 0x00;
+            TIM::CCMR2_Output::OC3M = 0x06;
+            TIM::CCER::CC3E = true;
+            TIM::CCER::CC3P = 0x00;
+        } else if (N == 4) {
+            TIM::CCMR2_Output::CC4S = 0x00;
+            TIM::CCMR2_Output::OC4M = 0x06;
+            TIM::CCER::CC4E = true;
+            TIM::CCER::CC4P = 0x00; 
+        }
+    }
+
+    template<u32 N>
+    void SetDuty(u32 duty) {
+        static_assert(N != 0);
+        if (duty > 100) return;
+        if constexpr (N == 1) {
+            TIM::CCR1::CCR1V = (arr_ + 1) * duty / 100;
+        } else if (N == 2) {
+            TIM::CCR2::CCR2V = (arr_ + 1) * duty / 100;
+        } else if (N == 3) {
+            TIM::CCR3::CCR3V = (arr_ + 1) * duty / 100;
+        } else if (N == 4) {
+            TIM::CCR4::CCR4V = (arr_ + 1) * duty / 100;
+        }
+    }
+private:
+    u32 arr_;
 };
+
+using PWMGenerator1 = PWMGenerator<RCC::APBENR2::TIM1EN, TIM1>;

@@ -12,7 +12,7 @@ uint32_t RoundBits(T t) {
    return t % 8 == 0 ? t / 8 : t / 8 + 1;
 }
 
-constexpr uint32_t Q1_THRESHOLD = 128;
+constexpr uint32_t Q1_THRESHOLD = 96;
 
 bool Q1Sample(FT_Bitmap* bmp, uint32_t x, uint32_t y) {
     const uint8_t* row = bmp->buffer + static_cast<ptrdiff_t>(y) * bmp->pitch;
@@ -169,7 +169,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
     const std::string face_path = "sourcehans.otf";
-    std::u32string chset = U"? ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-电压流功率板上灯珠温度℃";
+    std::u32string chset = U"? ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-电压流功率板上灯珠温度硬件自检中完成错误℃";
     auto samples = FaceSample(Q1SampleH, face_path, 14, chset, lib);
     FT_Done_FreeType(lib);
     ConsoleOut("SourceHanSans", samples);
