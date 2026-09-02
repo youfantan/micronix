@@ -6,11 +6,9 @@ extern "C" {
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
-typedef unsigned long long u64;
-typedef char i8;
-typedef short i16;
-typedef int i32;
-typedef long long i64;
+typedef signed char i8;
+typedef signed short i16;
+typedef signed int i32;
 
 // exported types
 
@@ -19,13 +17,6 @@ typedef struct {
     u32 fpclk;
     u32 fqclk;
 } system_profile;
-
-typedef struct {
-    u8 use_crystal_osc;
-    u8 pllp_div;
-    u8 pllq_div;
-    u8 pllr_div;
-} clock_profile;
 
 typedef struct {
     u32 block_size;
@@ -41,9 +32,9 @@ typedef void* handle;
 
 // exported functions
 
-void slab_initialize(const slab_profile* profiles, u32 size);
-u8* slab_alloc(u32 size);
-void slab_free(u8* ptr);
+void slab_initialize();
+void* slab_alloc(u32 size);
+void slab_free(void* ptr);
 
 void sched_initialize();
 
@@ -83,4 +74,106 @@ u32 timer_ticks_to_us(tick* t);
 tick timer_ms_to_ticks(u32 ms);
 tick timer_us_to_ticks(u32 us);
 
+}
+
+enum access_type : u8 {
+    RW = 0,
+    R,
+    W,
+    R_WOnce,
+    WOnce,
+};
+
+typedef struct {
+    u8 off;
+    u8 len;
+    u8 access;
+} RegisterFieldDescriptor;
+
+
+inline void WriteRegisterField(u32 addr, u8 offset, u8 length, u32 value) {
+    const u32 mask = (0xFFFFFFFF >> (32 - length)) << offset;
+    *(volatile u32*)(addr) = (*(volatile u32*)(addr) & ~mask) | ((value << offset) & mask);
+}
+
+inline u32 ReadRegisterField(u32 addr, u8 offset, u8 length) {
+    const u32 mask = (0xFFFFFFFF >> (32 - length)) << offset;
+    return (*reinterpret_cast<volatile u32*>(addr) & mask) >> offset;
+}
+
+#ifdef __cplusplus
+
+template<u32 ADDR, u8 OFFSET, u8 LENGTH>
+inline void WriteRegisterField(u32 value) {
+    constexpr static u32 mask = (0xFFFFFFFF >> (32 - LENGTH)) << OFFSET;
+    *reinterpret_cast<volatile u32*>(ADDR) = (*reinterpret_cast<volatile u32*>(ADDR) & ~mask) | ((value << OFFSET) & mask);
+}
+
+template<u32 ADDR, u8 OFFSET, u8 LENGTH>
+inline u32 ReadRegisterField() {
+    constexpr static u32 mask = (0xFFFFFFFF >> (32 - LENGTH)) << OFFSET;
+    return (*reinterpret_cast<volatile u32*>(ADDR) & mask) >> OFFSET;
+}
+
+
+template<u32 _ADDR, RegisterFieldDescriptor _RFD>
+struct RegisterField {
+    constexpr static u32 ADDR = _ADDR;
+    constexpr static RegisterFieldDescriptor RFD = _RFD;
+
+    const RegisterField& operator=(u32 value) const {
+        Set(value);
+        return *this;
+    }
+
+    operator u32() const {
+        return Get();
+    }
+
+    void Set(u32 value) const {
+        *reinterpret_cast<volatile u32*>(ADDR) = (*reinterpret_cast<volatile u32*>(ADDR) & ~mask) | ((value << RFD.off) & mask);
+    }
+
+    u32 Get() const {
+        return (*reinterpret_cast<volatile u32*>(ADDR) & mask) >> RFD.off;
+    }
+private:
+    constexpr static u32 mask = (0xFFFFFFFF >> (32 - RFD.len)) << RFD.off;
+};
+
+#define DECL_REGISTER(Base) \
+template<RegisterFieldDescriptor RFD> \
+using RegisterField = RegisterField<Base, RFD>
+
+#endif
+
+struct CharacterHeader {
+    u32 unicode;
+    u16 offset;
+    u8 width;
+    u8 height;
+    u8 advance;
+    i8 bearing_x;
+    i8 bearing_y;
+};
+
+struct CharactersSet {
+    const u8* data;
+    u32 data_size;
+    const CharacterHeader* headers;
+    u32 headers_size;
+};
+
+inline void memzero(void* ptr, u32 size) {
+    for (u32 i = 0; i < size; ++i) {
+        ((char*)ptr)[i] = 0;
+    }
+}
+
+inline u32 strlen(const char* str) {
+    u32 l = 0;
+    while (str[l] != 0) {
+        ++l;
+    }
+    return l;
 }

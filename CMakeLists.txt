@@ -5,8 +5,8 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
-
-set(DEVICE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/devices/stm32g030/)
+set(DEVICE_TYPE stm32g030)
+set(DEVICE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/devices/)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -14,17 +14,20 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
-message("Build type: " ${CMAKE_BUILD_TYPE})
-
+message("Selected Device: " ${DEVICE_TYPE})
 # Create an executable object type
 add_executable(app-test)
 
 include_directories(
         include
-        ${DEVICE_DIR})
+        modules
+        ${DEVICE_DIR}
+        ${DEVICE_DIR}/${DEVICE_TYPE}
+
+)
 
 target_sources(app-test PRIVATE
-        ${DEVICE_DIR}/startup.s
+        ${DEVICE_DIR}/${DEVICE_TYPE}/startup.s
         os/os_entry.cpp
         os/exception.cpp
         os/sched.cpp
@@ -33,7 +36,7 @@ target_sources(app-test PRIVATE
 )
 
 target_link_options(app-test PRIVATE
-        -T ${DEVICE_DIR}/app.ld
+        -T ${DEVICE_DIR}/${DEVICE_TYPE}/app.ld
 )
 
 target_link_libraries(app-test PRIVATE
