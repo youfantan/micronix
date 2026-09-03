@@ -190,3 +190,4 @@ inline u32 strlen(const char* str) {
     }
     return l;
 }
+

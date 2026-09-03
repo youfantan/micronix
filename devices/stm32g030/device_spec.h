@@ -3,8 +3,8 @@
 #include <base.h>
 #include <type_traits>
 #include <register_spec.h>
-
 #include <sys_conf.h>
+#include <utils.h>
 
 static inline void __NOP(void)        { __asm volatile ("nop"); }
 static inline void __WFI(void)        { __asm volatile ("wfi"); }
@@ -368,10 +368,138 @@ struct SPIDevice {
 
 template<RegisterField RCCENR, typename _ADC>
 struct ADCSampler {
-    ADCSampler() {
+    using ADC = _ADC;
+
+    enum class SampleTime {
+        CYCLES_1_5,
+        CYCLES_3_5,
+        CYCLES_7_5,
+        CYCLES_12_5,
+        CYCLES_19_5,
+        CYCLES_39_5,
+        CYCLES_79_5,
+        CYCLES_160_5,
+    };
+
+    enum class Resolution {
+        BITS12,
+        BITS10,
+        BITS8,
+        BITS6,
+    };
+
+    ADCSampler(Resolution resolution, SampleTime timing) : result_{}, ch_msk_(0) {
         RCCENR = true;
+        // ADC Calibration
+        ADC::ADC_CFGR2::CKMODE = 0x01; // PCLK/2 32MHz
+        ADC::ADC_CR::ADVREGEN = true;
+        timer_sleep(20); // From STM32G030C8T6 Datasheet
+        ADC::ADC_CR::ADCAL = true;
+        while (ADC::ADC_ISR::EOCAL != true) {} // Wait for Calibration
+        ADC::ADC_CFGR1::RES = static_cast<u32>(resolution);
+        ADC::ADC_SMPR::SMP1 = static_cast<u32>(timing); // All convertion using SMP1
+        ADC::ADC_CFGR1::CONT = 0x00; // No continuous
+        ADC::ADC_CFGR1::DISCEN = 0x00; // Convert all channel by a ADSTART calling
+        ADC::ADC_ISR::ADRDY = true; // Clear ADCRDY bit
+        ADC::ADC_CR::ADEN = true;
+        while (ADC::ADC_ISR::ADRDY != true) {} // Wait for ADC ready
+    }
+
+    template<u32 CHANNEL>
+    u16& CreateSampler() {
+        static_assert(CHANNEL <= 18);
+        if constexpr (CHANNEL == 0) {
+            ADC::ADC_SMPR::SMPSEL0 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL0 = 0x01;
+        } else if (CHANNEL == 1) {
+            ADC::ADC_SMPR::SMPSEL1 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL1 = 0x01;
+        } else if (CHANNEL == 2) {
+            ADC::ADC_SMPR::SMPSEL2 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL2 = 0x01;
+        } else if (CHANNEL == 3) {
+            ADC::ADC_SMPR::SMPSEL3 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL3 = 0x01;
+        } else if (CHANNEL == 4) {
+            ADC::ADC_SMPR::SMPSEL4 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL4 = 0x01;
+        } else if (CHANNEL == 5) {
+            ADC::ADC_SMPR::SMPSEL5 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL5 = 0x01;
+        } else if (CHANNEL == 6) {
+            ADC::ADC_SMPR::SMPSEL6 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL6 = 0x01;
+        } else if (CHANNEL == 7) {
+            ADC::ADC_SMPR::SMPSEL7 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL7 = 0x01;
+        } else if (CHANNEL == 8) {
+            ADC::ADC_SMPR::SMPSEL8 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL8 = 0x01;
+        } else if (CHANNEL == 9) {
+            ADC::ADC_SMPR::SMPSEL9 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL9 = 0x01;
+        } else if (CHANNEL == 10) {
+            ADC::ADC_SMPR::SMPSEL10 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL10 = 0x01;
+        } else if (CHANNEL == 11) {
+            ADC::ADC_SMPR::SMPSEL11 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL11 = 0x01;
+        } else if (CHANNEL == 12) {
+            ADC::ADC_SMPR::SMPSEL12 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL12 = 0x01;
+        } else if (CHANNEL == 13) {
+            ADC::ADC_SMPR::SMPSEL13 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL13 = 0x01;
+        } else if (CHANNEL == 14) {
+            ADC::ADC_SMPR::SMPSEL14 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL14 = 0x01;
+        } else if (CHANNEL == 15) {
+            ADC::ADC_SMPR::SMPSEL15 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL15 = 0x01;
+        } else if (CHANNEL == 16) {
+            ADC::ADC_SMPR::SMPSEL16 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL16 = 0x01;
+        } else if (CHANNEL == 17) {
+            ADC::ADC_SMPR::SMPSEL17 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL17 = 0x01;
+        } else if (CHANNEL == 18) {
+            ADC::ADC_SMPR::SMPSEL18 = 0x00;
+            ADC::ADC_CHSELR_0::CHSEL18 = 0x01;
+        }
+        SelelctBit(CHANNEL);
+        while (ADC::ADC_ISR::CCRDY != 1) {}
+        ADC::ADC_ISR::CCRDY = 1;
+        return result_[CHANNEL];
+    }
+
+    static float ToVoltage(u16 value) {
+        return (static_cast<float>(value) / 4096.0f) * 3.3f;
+    }
+
+    void Sample() {
+        ADC::ADC_CR::ADSTART = true;
+        for (u32 i = 0; i < count_of(result_); ++i) {
+            if (ValidateBit(i)) {
+                while (!ADC::ADC_ISR::EOC) {}
+                result_[i] = ADC::ADC_DR::DATA;
+            }
+        }
+    }
+
+private:
+    u16 result_[19];
+    u32 ch_msk_;
+
+    void SelelctBit(u32 N) {
+        ch_msk_ |= 1 << N;
+    }
+
+    bool ValidateBit(u32 N) const {
+        return (ch_msk_ & 1 << N) >> N;
     }
 };
+
+using ADCSampler1 = ADCSampler<RCC::APBENR2::ADCEN, ADC>;
 
 template<RegisterField RCCENR, typename _TIM>
 struct PWMGenerator {

@@ -169,8 +169,8 @@ int main() {
         exit(EXIT_FAILURE);
     }
     const std::string face_path = "sourcehans.otf";
-    std::u32string chset = U"? ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-电压流功率板上灯珠温度硬件自检中完成错误℃";
-    auto samples = FaceSample(Q1SampleH, face_path, 14, chset, lib);
+    std::u32string chset = U"? ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.%-电压流功率占空比板上风扇灯珠温度硬件自检中完成错误不足负载关断℃";
+    auto samples = FaceSample(Q1SampleH, face_path, 13, chset, lib);
     FT_Done_FreeType(lib);
     ConsoleOut("SourceHanSans", samples);
     return 0;

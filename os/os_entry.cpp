@@ -4,8 +4,6 @@
 #include <cortexm0_spec.h>
 #include <utils.h>
 
-extern int main();
-
 extern "C" {
 
 void system_init() {
@@ -15,7 +13,6 @@ void system_init() {
 int kernel_init() {
     timer_initialize(&clk_cfg);
     slab_initialize();
-    main();
     return 0;
 }
 

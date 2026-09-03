@@ -96,6 +96,7 @@ LoopFillZerobss:
 
 /* Call the application s entry point.*/
   bl kernel_init
+  bl main
 
 LoopForever:
   b LoopForever
