@@ -1,0 +1,5 @@
+If:
+  PathMatch: include/.*\.h
+CompileFlags:
+  Remove: [-std=*, -x]
+  Add: [-xc++, -std=c++20]

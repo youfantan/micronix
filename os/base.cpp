@@ -46,3 +46,20 @@ u32 strlen(const char* str) {
     }
     return l;
 }
+
+void __assert_func(const char* file, int line, const char* function, const char* expression) {
+    (void)file;
+    (void)line;
+    (void)function;
+    (void)expression;
+    __asm volatile ("bkpt #0");
+    while (true) {
+        __asm volatile ("wfi");
+    }
+}
+
+void memcopy(void* dest, const void* src, u32 size) {
+    for (u32 i = 0; i < size; ++i) {
+        static_cast<u8*>(dest)[i] = static_cast<const u8*>(src)[i];
+    }
+}

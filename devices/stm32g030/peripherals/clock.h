@@ -1,7 +1,7 @@
 #pragma once
 
 #include <base.h>
-#include <conf.h>
+#include <../../../include/config/kern_conf.h>
 #include <device.h>
 #include <register_spec.h>
 

@@ -1,27 +1,26 @@
-#pragma once
-
 #include <iostream>
 #include <cstdint>
+#include <algorithm>
+#include <exception>
+#include <string_view>
 #include <Windows.h>
-#include <luciferin/color.h>
-#include <luciferin/graphics2d.h>
-#include <faces.h>
-
-#define NOMINMAX
+#include <subsystem/luciferin/color.h>
+#include <subsystem/luciferin/graphics2d.h>
+#include "mock/platform.h"
 
 namespace micronix::luciferin
 {
-    constexpr static u32 SimulatorWidth = 1280;
-    constexpr static u32 SimulatorHeight = 640;
+    constexpr static u32 SimulatorWidth = 160;
+    constexpr static u32 SimulatorHeight = 128;
 
-    struct SimulatorContext {
+    struct simulator_context {
         constexpr static u32 Width = SimulatorWidth;
         constexpr static u32 Height = SimulatorHeight;
-        using ColorFormat = ColorFormatRGB24;
+        using color_format = color_format_rgb24;
     };
 
-    struct SimulatorAdapter {
-        using Context = SimulatorContext;
+    struct simulator_adapter {
+        using context = simulator_context;
 
     private:
         constexpr static wchar_t WindowClassName[] = L"LuciferinSimulatorWindow";
@@ -53,13 +52,13 @@ namespace micronix::luciferin
 
             if (!RegisterClassExW(&windowClass) &&
                 GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
-                fallback("SimulatorAdapter: Failed to register the window class");
+                std::cerr << "SimulatorAdapter: Failed to register the window class" << std::endl;
                 return;
             }
 
-            RECT windowRect{ 0, 0, Context::Width, Context::Height };
+            RECT windowRect{ 0, 0, context::Width, context::Height };
             if (!AdjustWindowRect(&windowRect, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX, FALSE)) {
-                fallback("SimulatorAdapter: Failed to calculate the window size");
+                std::cerr << "SimulatorAdapter: Failed to calculate the window size" << std::endl;
                 return;
             }
 
@@ -77,7 +76,7 @@ namespace micronix::luciferin
                 GetModuleHandleW(nullptr),
                 nullptr);
             if (!window_) {
-                fallback("SimulatorAdapter: Failed to create the window");
+                std::cerr << "SimulatorAdapter: Failed to create the window" << std::endl;
                 destroy();
                 return;
             }
@@ -85,15 +84,15 @@ namespace micronix::luciferin
             window_dc_ = GetDC(window_);
             framebuffer_dc_ = CreateCompatibleDC(window_dc_);
             if (!window_dc_ || !framebuffer_dc_) {
-                fallback("SimulatorAdapter: Failed to create a device context");
+                std::cerr << "SimulatorAdapter: Failed to create a device context" << std::endl;
                 destroy();
                 return;
             }
 
             BITMAPINFO bmp_info{};
             bmp_info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-            bmp_info.bmiHeader.biWidth = static_cast<LONG>(Context::Width);
-            bmp_info.bmiHeader.biHeight = -static_cast<LONG>(Context::Height);
+            bmp_info.bmiHeader.biWidth = static_cast<LONG>(context::Width);
+            bmp_info.bmiHeader.biHeight = -static_cast<LONG>(context::Height);
             bmp_info.bmiHeader.biPlanes = 1;
             bmp_info.bmiHeader.biBitCount = 32;
             bmp_info.bmiHeader.biCompression = BI_RGB;
@@ -106,7 +105,7 @@ namespace micronix::luciferin
                 nullptr,
                 0);
             if (!framebuffer_bitmap_ || !framebuffer_bits_) {
-                fallback("SimulatorAdapter: Failed to create the framebuffer bitmap");
+                std::cerr << "SimulatorAdapter: Failed to create the framebuffer bitmap" << std::endl;
                 destroy();
                 return;
             }
@@ -155,7 +154,7 @@ namespace micronix::luciferin
             }
 
             auto* destination = static_cast<u8*>(framebuffer_bits_);
-            constexpr u32 pixelCount = Context::Width * Context::Height;
+            constexpr u32 pixelCount = context::Width * context::Height;
             for (u32 pixel = 0; pixel < pixelCount; ++pixel) {
                 const u8* source_pixel = static_cast<const u8*>(framebuffer) + pixel * 3;
                 u8* dest_pixel = destination + pixel * 4;
@@ -183,10 +182,6 @@ namespace micronix::luciferin
             return window_open_ && window_ && IsWindow(window_);
         }
 
-        static void fallback(const char* str) {
-            std::cout << str << std::endl;
-        }
-
     private:
         static LRESULT CALLBACK WindowProcedure(
             HWND window,
@@ -202,8 +197,8 @@ namespace micronix::luciferin
                             paintDc,
                             0,
                             0,
-                            Context::Width,
-                            Context::Height,
+                            context::Width,
+                            context::Height,
                             framebuffer_dc_,
                             0,
                             0,
@@ -233,21 +228,65 @@ namespace micronix::luciferin
     };
 }
 
-using adapter = micronix::luciferin::SimulatorAdapter;
-using context = adapter::Context;
-using color = context::ColorFormat;
+using adapter = micronix::luciferin::simulator_adapter;
+using context = adapter::context;
+using color = context::color_format;
 using graphics2d = micronix::luciferin::graphics2d<adapter>;
 
 uint8_t fb[graphics2d::get_framebuffer_size()];
 
-int main() {
+int main(int argc, char** argv) {
+    bool smoke_test = false;
+    const char* image_path = MICRONIX_ROFS_IMAGE_PATH;
+    for (int i = 1; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--image" && i + 1 < argc) {
+            image_path = argv[++i];
+        } else {
+            std::cerr << "Usage: " << argv[0] << " [--image rofs.image.bin] [--smoke-test]\n";
+            return 1;
+        }
+    }
 
-    graphics2d graphics(fb);
+    micronix::simulator::load_rofs_image(image_path);
+    auto font24 = micronix::luciferin::find_font("Font_Roboto_24px");
+    auto font12 = micronix::luciferin::find_font("Font_Roboto_12px");
+    if (!font24 || !font12) {
+        std::cerr << "simulator: required Roboto fonts not found in ROFS" << std::endl;
+        return 1;
+    }
+
+    graphics2d graphics(fb, ROFS_ImageBase);
+    if (!adapter::available()) return 1;
+
+    for (u32 y = 0; y < context::Height; ++y) {
+        for (u32 x = 0; x < context::Width; ++x) {
+            graphics.draw_pixel(x, y, color(255, 255, 255));
+        }
+    }
+
+    graphics.draw_string(10, 40, font24.get(), micronix::utf32_string_literal(U"micronix::luciferin"));
+    graphics.draw_string(10, 80, font24.get(), micronix::utf32_string_literal(U"Render-subsystem-demo"));
+    graphics.draw_string(10, 120, font12.get(), micronix::utf32_string_literal(U"ROFS:Font_Roboto_12px"));
+    graphics.draw_string(10, 145, font12.get(), micronix::utf32_string_literal(U"0123456789!@#$%&*()"));
+    graphics.present();
+
+    if (smoke_test) {
+        const auto row_has_pixels = [](u32 begin, u32 end) {
+            return std::any_of(fb + begin * context::Width * 3,
+                fb + end * context::Width * 3, [](u8 value) { return value != 0; });
+        };
+        if (!row_has_pixels(0, 90) || !row_has_pixels(90, 150)) {
+            std::cerr << "simulator: font rendering produced no pixels" << std::endl;
+            return 1;
+        }
+        std::cout << "ROFS loaded: " << ROFS_ImageSize << " bytes, " << ROFS_Entries
+                  << " entries; both font sizes rendered successfully.\n";
+        return 0;
+    }
+
     while (adapter::available()) {
-        for (u32 y = 0; y < context::Height; ++y)
-            for (u32 x = 0; x < context::Width; ++x)
-                graphics.draw_pixel(x, y, color(255, 0, 0));
         graphics.present();
+        Sleep(16);
     }
     return 0;
 }

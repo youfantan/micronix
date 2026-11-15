@@ -1,0 +1,5 @@
+add_files("devices/stm32g030/startup.s")
+add_ldflags("-Tdevices/stm32g030/app.ld", {force = true})
+on_load(function (target)
+    target:data_set("linkdepfiles", {path.absolute("devices/stm32g030/app.ld")})
+end)

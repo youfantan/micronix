@@ -1,7 +1,7 @@
-#include <base.h>
-#include <kernel/slab_alloc.h>
-#include <conf.h>
-#include <utils/misc.h>
+#include "../../include/base.h"
+#include "../../include/kernel/slab_alloc.h"
+#include "../../include/config/kern_conf.h"
+#include "../../include/utils/algorithms.h"
 
 using namespace micronix::kernel;
 

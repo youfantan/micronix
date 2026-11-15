@@ -1,13 +1,14 @@
 # MicroNix
 
-MicroNix is a system running on embed arm platform.
+micronix is a system running on embed arm platform.
 
 ## Features
-+ bootloader
-+ slab allocator
-+ multi-process scheduler
-+ standard peripherals library
-+ standard library
++ Bootloader
++ Heap Allocator
++ MultiProcess
++ Luciferin Render Subsystem
+
 
 ## Support Platforms
 + STM32G030C8
++ RP2040
