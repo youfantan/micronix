@@ -6,42 +6,51 @@
 namespace micronix::peripherals
 {
     struct gpio_init_cfg {
-        enum class io {
-            input_floating,
-            input_pullup,
-            input_pulldown,
-            output_pushpull,
+        enum class _type {
+            input,
             output_od,
-            input_af,
-            output_pushpull_af,
-            output_od_af,
-            analog
-        } function;
+            output_pp,
+            analog,
+        } type;
+        enum class _pupd {
+            pullup,
+            pulldown,
+            floating,
+        } pupd;
+        bool direct;
+        u8 af;
     };
 
-    template<typename gpio>
-    concept is_gpio = requires(const gpio_init_cfg& cfg) {
-        gpio::init(cfg);
-        gpio::set();
-        gpio::reset();
-        gpio::output(true);
-        { gpio::input() } -> std::same_as<bool>;
-        gpio::destory();
+    template<template<typename, gpio_init_cfg> typename gpio, typename reg, gpio_init_cfg cfg>
+    concept is_gpio = requires {
+        gpio<reg, cfg>::init();
+        { gpio<reg, cfg>::is_null } -> std::same_as<const bool&>;
+    } && (
+        cfg.type == gpio_init_cfg::_type::analog ||
+        (cfg.type == gpio_init_cfg::_type::input && requires {
+            { gpio<reg, cfg>::input() } -> std::same_as<bool>;
+        }) ||
+        ((cfg.type == gpio_init_cfg::_type::output_od || cfg.type == gpio_init_cfg::_type::output_pp) &&
+            requires {
+                gpio<reg, cfg>::set();
+                gpio<reg, cfg>::reset();
+                { gpio<reg, cfg>::output() } -> std::same_as<bool>;
+            } &&
+            (cfg.type == gpio_init_cfg::_type::output_od || requires {
+                gpio<reg, cfg>::toggle();
+            }))
+    );
 
-        { gpio::null } -> std::same_as<const gpio&>;
-        { gpio::is_null } -> std::same_as<const bool&>;
-    };
-
-    template<typename gpio>
+    template<template<typename, gpio_init_cfg> typename gpio, typename reg, gpio_init_cfg cfg>
     concept allow_null_gpio = requires
     {
-        requires is_gpio<gpio>;
+        requires is_gpio<gpio, reg, cfg>;
     };
 
-    template<typename gpio>
+    template<template<typename, gpio_init_cfg> typename gpio, typename reg, gpio_init_cfg cfg>
     concept allow_unnull_gpio = requires
     {
-        requires is_gpio<gpio>;
-        requires !gpio::is_null;
+        requires is_gpio<gpio, reg, cfg>;
+        requires !gpio<reg, cfg>::is_null;
     };
 }
