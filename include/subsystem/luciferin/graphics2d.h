@@ -6,16 +6,35 @@
 
 namespace micronix::luciferin
 {
-    template<typename adapter>
-    class graphics2d {
-        using context = typename adapter::context;
-        using format = typename context::color_format;
 
-        void* framebuffer_;
-        void* fonts_base_;
+    template<typename context>
+    concept is_graphics2d_context = requires
+    {
+        requires is_color_format<typename context::color_format>;
+        { context::Width } -> std::same_as<const u32&>;
+        { context::Height } -> std::same_as<const u32&>;
+    };
+
+    template<typename adapter>
+    concept is_graphics2d_adapter = requires ()
+    {
+        requires is_graphics2d_context<typename adapter::context>;\
+        { adapter::get_framebuffer() } -> std::same_as<void*>;
+        adapter::initialize();
+        adapter::present();
+        adapter::destroy();
+    };
+
+    template<typename adapter>
+    requires is_graphics2d_adapter<adapter>
+    class graphics2d {
+        using context = adapter::context;
+        using format = context::color_format;
+
+        void* framebuffer_ { adapter::get_framebuffer() };
 
     public:
-        graphics2d(void* framebuffer, void* fonts_base) : framebuffer_(framebuffer), fonts_base_(fonts_base) {
+        graphics2d() {
             adapter::initialize();
         }
 
@@ -56,7 +75,7 @@ namespace micronix::luciferin
         }
 
         void present() {
-            adapter::present(framebuffer_);
+            adapter::present();
         }
 
         ~graphics2d() {

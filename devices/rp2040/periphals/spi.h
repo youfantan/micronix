@@ -85,6 +85,19 @@ struct spi {
             write(src[i]);
         }
     }
+
+    template<typename gpio>
+    requires micronix::peripherals::allow_unnull_gpio<gpio>
+    constexpr static void select() {
+        gpio::reset();
+    }
+
+    template<typename gpio>
+    requires micronix::peripherals::allow_unnull_gpio<gpio>
+    constexpr static void unselect() {
+        while (SSPSR::BSY != 0) {}
+        gpio::set();
+    }
 };
 
 

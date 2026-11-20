@@ -1,11 +1,13 @@
 #pragma once
 #include <base.h>
 
-extern "C" u32 _flash_rofs_imgbase[];
+extern "C" uint32_t _flash_rofs_image_begin[];
+extern "C" uint32_t _flash_rofs_image_end[];
 
-constexpr static u32 ROFS_KeySize = 16;
-constexpr static u32 ROFS_Entries = 2;
-constexpr static u32 ROFS_ImageSize = 14336;
-constexpr static u32* ROFS_ImageBase = _flash_rofs_imgbase;
-constexpr static u32 ROFS_entry_Font_Roboto_12px = 4;
-constexpr static u32 ROFS_entry_Font_Roboto_24px = 28;
+constexpr static uint32_t ROFS_KeySize = 16;
+constexpr static uint32_t ROFS_Entries = 2;
+constexpr static uint32_t ROFS_ImageSize = 14336;
+constexpr static uint32_t* ROFS_ImageBase = _flash_rofs_image_begin;
+constexpr static uint32_t* ROFS_ImageEnd = _flash_rofs_image_end;
+constexpr static uint32_t ROFS_entry_Font_Roboto_12px = 4;
+constexpr static uint32_t ROFS_entry_Font_Roboto_24px = 28;

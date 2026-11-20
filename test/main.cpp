@@ -1,10 +1,12 @@
 #include <base.h>
 #include <rp2040/periphals/gpio.h>
 #include <rp2040/periphals/spi.h>
-#include "../modules/st7735s.h"
+#include "../modules/st7735s_graphics2d_adapter.h"
+#include <subsystem/luciferin/graphics2d.h>
 void app_main() {
     using namespace micronix::peripherals;
     using namespace micronix::modules;
+    using namespace micronix::luciferin;
 
     constexpr static gpio_init_cfg direct_pp = {
         .type = gpio_init_cfg::_type::output_pp,
@@ -44,10 +46,24 @@ void app_main() {
     st7735s_spi::init();
     static constexpr auto cfg = [] {
         st7735s_cfg cfg(128, 160);
+        cfg.x_mirror();
         cfg.xy_exchange();
         return cfg;
     }();
-    using st7735s = st7735s<st7735s_spi, st7735s_cs, st7735s_dc, st7735s_sda, st7735s_sck, st7735s_rst, st7735s_blk, cfg>;
-    
-
+    using st7735s_adapter = st7735s_graphics2d_adapter<st7735s_spi, st7735s_cs, st7735s_dc, st7735s_sda, st7735s_sck, st7735s_rst, st7735s_blk, cfg>;
+    graphics2d<st7735s_adapter> g2d;
+    auto roboto_24px = find_font("Font_Roboto_24px");
+    auto roboto_12px = find_font("Font_Roboto_12px");
+    if (roboto_24px.success() && roboto_12px.success()) {
+        for (u32 y = 0; y < st7735s_adapter::context::Height; ++y) {
+            for (u32 x = 0; x < st7735s_adapter::context::Width; ++x) {
+                g2d.draw_pixel(x, y, color_format_rgb565(255, 255, 255));
+            }
+        }
+        while (true) {
+            g2d.draw_string(10, 26, roboto_24px, micronix::utf32_string_literal(U"micronix"));
+            g2d.draw_string(10, 40, roboto_12px, micronix::utf32_string_literal(U"test ascii 1234"));
+            g2d.present();
+        }
+    }
 }

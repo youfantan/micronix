@@ -53,7 +53,7 @@ target("demoapp")
     add_cxflags("-mcpu=cortex-m0plus", "-mthumb", "-ffreestanding", "-fno-builtin",
                 "-Wall", "-fdata-sections", "-ffunction-sections", {force = true})
 
-    add_cxxflags("-fno-rtti", "-fno-exceptions", "-fno-threadsafe-statics", {force = true})
+    add_cxxflags("-fno-rtti", "-fno-exceptions", "-fno-threadsafe-statics", "-fconcepts-diagnostics-depth=128", {force = true})
 
     add_asflags("-mcpu=cortex-m0plus", "-mthumb", {force = true})
     add_asflags('-DMICRONIX_ROFS_IMAGE_PATH="' .. rofs_image .. '"', {force = true})

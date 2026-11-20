@@ -1,9 +1,9 @@
 .section .flushable, "a", %progbits
 .balign 4
 
-.global luciferin_flushable_start
-.global luciferin_flushable_end
+.global _flash_rofs_image_begin
+.global _flash_rofs_image_end
 
-luciferin_flushable_start:
-.incbin MICRONIX_ROFS_IMAGE_PATH
-luciferin_flushable_end:
+_flash_rofs_image_begin:
+#embed MICRONIX_ROFS_IMAGE_PATH prefix(.byte )
+_flash_rofs_image_end:

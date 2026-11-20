@@ -17,17 +17,18 @@ _stage2:
     movs r1, #0x00 @ NDF -> 0x00(FIFO only store 1 dataframe)
     str r1, [r3, #0x04] @ SSI_CTRLR1
 
-    movs r1, #0x02 @ SCKDV -> 2
+    movs r1, #4 @ Generic 03h reads at clk_sys / 4
     str r1, [r3, #0x14] @ SSI_BAUDR
 
     ldr r4, =0xf4
     add r4, r3, r4
-    ldr r1, =0x03000218 @ TRANS_TYPE -> 1C1A; ADDR_L -> 4x6 = 24bits; INST_L -> 16bits instruction; WAIT_CYCLES -> 0; SPI_DDR_EN -> disabled; INST_DDR_EN -> disabled; SPI_RXDS_EN -> disabled; XIP_CMD -> 0x03
+    ldr r1, =0x03000218 @ Serial 03h read, 8-bit command, 24-bit address, no dummy cycles
     str r1, [r4] @ SPI_CTRLR0
 
     movs    r1, #0x01 @ SSI_EN -> 1
     str     r1, [r3, #0x08] @ SSI_ENR
 @ Configure Vector Table
+    ldr r0, =_vectors
     ldr r2, [r0, #0x04] @ Load Reset Handler address into r2
     bx r2 @ Jump to reset handler
     .ltorg @ Reserved area
@@ -57,7 +58,7 @@ Reset_Handler:
     cmp r0, #0
     bne InfLoop @ only Core 0 work for initialize, now let it infinite loop
 
-    ldr r0, =0x10000100 @ VTB
+    ldr r0, =_vectors
     ldr r1, =0xe000ed08 @ SCB_VTOR
     str r0, [r1] @ Load VTB into SCB_VTOR
     ldr r1, [r0] @ Load Stack Top address into r1
@@ -84,6 +85,7 @@ Reset_Handler:
 4:  @ Initialize Kernel
     bl clock_init
     bl kernel_entry
+.thumb_func
 Default_Handler:
 InfLoop:
     wfi

@@ -1,17 +1,18 @@
 #include <base.h>
+#include <cstddef>
 
-void* memset(void* dst, int val, u32 len) {
+extern "C" void* memset(void* dst, int val, std::size_t len) noexcept {
     u8* d = reinterpret_cast<u8*>(dst);
-    for (u32 i = 0; i < len; ++i) {
+    for (std::size_t i = 0; i < len; ++i) {
         d[i] = static_cast<u8>(val);
     }
     return dst;
 }
 
-void* memcpy(void* dst, const void* src, u32 len) {
+extern "C" void* memcpy(void* dst, const void* src, std::size_t len) noexcept {
     const u8* s = static_cast<const u8*>(src);
     u8* d = static_cast<u8*>(dst);
-    for (u32 i = 0; i < len; ++i) {
+    for (std::size_t i = 0; i < len; ++i) {
         d[i] = s[i];
     }
     return dst;

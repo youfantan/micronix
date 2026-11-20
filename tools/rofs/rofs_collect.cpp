@@ -196,12 +196,14 @@ int main(int argc, char** argv) {
     header << std::format(R"(#pragma once
 #include <base.h>
 
-extern "C" uint32_t _flash_rofs_imgbase[];
+extern "C" uint32_t _flash_rofs_image_begin[];
+extern "C" uint32_t _flash_rofs_image_end[];
 
 constexpr static uint32_t ROFS_KeySize = {};
 constexpr static uint32_t ROFS_Entries = {};
 constexpr static uint32_t ROFS_ImageSize = {};
-constexpr static uint32_t* ROFS_ImageBase = _flash_rofs_imgbase;
+constexpr static uint32_t* ROFS_ImageBase = _flash_rofs_image_begin;
+constexpr static uint32_t* ROFS_ImageEnd = _flash_rofs_image_end;
 )", cfg.key_size, cfg.collect_files.size(), image.index());
     for (auto& f : cfg.collect_files) {
         std::string alias(cfg.key_size, 0);
