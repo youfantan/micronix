@@ -132,3 +132,16 @@ constexpr void match(const E& e, const Rules&... rules) {
     if (e > E_Max) return;
     (void)((e == Rules::value ? (static_cast<void>(rules.rp()), true) : false) || ...);
 }
+
+template<typename T>
+constexpr void swap(T& a, T& b) {
+    if constexpr(movable<T>) {
+        T temp = move(b);
+        b = move(a);
+        a = move(temp);
+    } else {
+        T temp = b;
+        b = a;
+        a = temp;
+    }
+}

@@ -13,9 +13,10 @@ inline constexpr u64 operator""_khz(u64 freq) {
 struct clock_config {
     u32 target_frequency_hz;
     u32 osc_frequency_hz;
-    u32 fb_div;
-    u32 post_div1;
-    u32 post_div2;
+    u32 sys_fb_div;
+    u32 usb_fb_div;
+    u32 sys_div1;
+    u32 sys_div2;
+    u32 usb_div1;
+    u32 usb_div2;
 };
-
-void clock_init();

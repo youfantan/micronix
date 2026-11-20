@@ -9,17 +9,16 @@
 #include <cstdlib>
 #include <limits>
 
-#include <base.h>
 #include <buffer.h>
 
 #define ASSERT(cond, msg) if (!(cond)) { std::cout << "Fatal at expression '" << #cond << "': " << msg << std::endl; exit(EXIT_FAILURE); }
 
 struct file {
     std::string path;
-    std::vector<u8> alias;
-    u32 align;
-    u32 entry_offset;
-    u32 image_offset;
+    std::vector<uint8_t> alias;
+    uint32_t align;
+    uint32_t entry_offset;
+    uint32_t image_offset;
     std::string content;
 
     file() : align(1), entry_offset(0), image_offset(0) {}
@@ -39,10 +38,10 @@ struct file {
 };
 
 struct configuration {
-    u32 version;
+    uint32_t version;
     std::string output_path;
-    u32 key_size;
-    u32 page_size;
+    uint32_t key_size;
+    uint32_t page_size;
     std::vector<file> collect_files;
 
     configuration() : version(1), output_path("./rofs.image.bin"), key_size(0), page_size(0), collect_files() {
@@ -64,7 +63,7 @@ std::vector<std::string> parse_line(const std::string& line) {
     return result;
 }
 
-u32 string_to_u32(const std::string& str) {
+uint32_t string_to_uint32_t(const std::string& str) {
     return std::atoi(str.c_str());
 }
 
@@ -83,10 +82,10 @@ configuration parse_config(const std::string& config_path) {
         if (splitted[0].starts_with('.')) {
             ASSERT(splitted.size() == 2, "Illegal image params size");
             if (splitted[0] == ".keysize") {
-                cfg.key_size = string_to_u32(splitted[1]);
+                cfg.key_size = string_to_uint32_t(splitted[1]);
                 ASSERT(cfg.key_size > 0 && cfg.key_size % 4 == 0, "Keysize must be multiple of 4");
             } else if (splitted[0] == ".pagesize") {
-                cfg.page_size = string_to_u32(splitted[1]);
+                cfg.page_size = string_to_uint32_t(splitted[1]);
             } else if (splitted[0] == ".output") {
                 cfg.output_path = splitted[1];
             } else {
@@ -102,7 +101,7 @@ configuration parse_config(const std::string& config_path) {
             f.path = path;
             fin.seekg(0, std::ios::end);
             auto len = fin.tellg();
-            ASSERT(len >= 0 && len < std::numeric_limits<u32>::max(), std::format("Invalid or too large input file {}", path));
+            ASSERT(len >= 0 && len < std::numeric_limits<uint32_t>::max(), std::format("Invalid or too large input file {}", path));
             fin.seekg(0, std::ios::beg);
             f.content.resize(len);
             if (len > 0) fin.read(f.content.data(), len);
@@ -111,7 +110,7 @@ configuration parse_config(const std::string& config_path) {
                 auto& k = splitted[i];
                 auto& v = splitted[i + 1];
                 if (k == "align") {
-                    f.align = string_to_u32(v);
+                    f.align = string_to_uint32_t(v);
                 } else if (k == "alias") {
                     ASSERT(v.size() <= cfg.key_size, "alias of file is larger than keysize");
                     f.alias.resize(cfg.key_size);
@@ -142,10 +141,10 @@ collect files: {}
 
 byte_buffer collect_image(configuration& cfg) {
     byte_buffer image_buffer;
-    image_buffer.append<u32>(0x01);
+    image_buffer.append<uint32_t>(0x01);
     auto& files = cfg.collect_files;
     std::ranges::sort(files.begin(), files.end(), [&](const file& a, const file& b) {
-        for (u32 i = 0; i < cfg.key_size; ++i) {
+        for (uint32_t i = 0; i < cfg.key_size; ++i) {
             if (a.alias[i] == b.alias[i]) continue;
             return a.alias[i] < b.alias[i];
         }
@@ -154,17 +153,17 @@ byte_buffer collect_image(configuration& cfg) {
     for (std::size_t i = 1; i < files.size(); ++i) {
         ASSERT(files[i - 1].alias != files[i].alias, "Repeated alias is illegal");
     }
-    u64 entry_offset = image_buffer.index();
-    u64 image_offset = image_buffer.index() + (cfg.key_size + sizeof(u32) * 2) * files.size();
+    uint64_t entry_offset = image_buffer.index();
+    uint64_t image_offset = image_buffer.index() + (cfg.key_size + sizeof(uint32_t) * 2) * files.size();
     for (auto & f : files) {
         if (image_offset % f.align != 0) image_offset = ((image_offset + f.align - 1) / f.align) * f.align;
-        ASSERT(image_offset + f.content.size() < std::numeric_limits<u32>::max(), "Image size is too large");
+        ASSERT(image_offset + f.content.size() < std::numeric_limits<uint32_t>::max(), "Image size is too large");
         image_buffer.append(f.alias);
-        image_buffer.append(static_cast<u32>(f.content.size()));
-        image_buffer.append(static_cast<u32>(image_offset));
+        image_buffer.append(static_cast<uint32_t>(f.content.size()));
+        image_buffer.append(static_cast<uint32_t>(image_offset));
         f.entry_offset = entry_offset;
         f.image_offset = image_offset;
-        entry_offset += cfg.key_size + sizeof(u32) * 2;
+        entry_offset += cfg.key_size + sizeof(uint32_t) * 2;
         image_offset += f.content.size();
         std::string alias_str(cfg.key_size, 0);
         memcpy(&alias_str[0], &f.alias[0], f.alias.size());
@@ -175,9 +174,9 @@ byte_buffer collect_image(configuration& cfg) {
         image_buffer.forward(f.image_offset - image_buffer.index());
         image_buffer.append(&f.content[0], f.content.size());
     }
-    u32 reserved_for_align = image_buffer.index() % cfg.page_size == 0 ? 0 : (image_buffer.index() + cfg.page_size - 1) / cfg.page_size * cfg.page_size - image_buffer.index();
+    uint32_t reserved_for_align = image_buffer.index() % cfg.page_size == 0 ? 0 : (image_buffer.index() + cfg.page_size - 1) / cfg.page_size * cfg.page_size - image_buffer.index();
     image_buffer.forward(reserved_for_align);
-    ASSERT(image_buffer.index() < std::numeric_limits<u32>::max(), "Image size is too large");
+    ASSERT(image_buffer.index() < std::numeric_limits<uint32_t>::max(), "Image size is too large");
     return image_buffer;
 }
 
@@ -197,17 +196,17 @@ int main(int argc, char** argv) {
     header << std::format(R"(#pragma once
 #include <base.h>
 
-extern "C" u32 _flash_rofs_imgbase[];
+extern "C" uint32_t _flash_rofs_imgbase[];
 
-constexpr static u32 ROFS_KeySize = {};
-constexpr static u32 ROFS_Entries = {};
-constexpr static u32 ROFS_ImageSize = {};
-constexpr static u32* ROFS_ImageBase = _flash_rofs_imgbase;
+constexpr static uint32_t ROFS_KeySize = {};
+constexpr static uint32_t ROFS_Entries = {};
+constexpr static uint32_t ROFS_ImageSize = {};
+constexpr static uint32_t* ROFS_ImageBase = _flash_rofs_imgbase;
 )", cfg.key_size, cfg.collect_files.size(), image.index());
     for (auto& f : cfg.collect_files) {
         std::string alias(cfg.key_size, 0);
         memcpy(&alias[0], &f.alias[0], f.alias.size());
-        header << std::format("constexpr static u32 ROFS_entry_{} = {};", alias, f.entry_offset ) << std::endl;
+        header << std::format("constexpr static uint32_t ROFS_entry_{} = {};", alias, f.entry_offset ) << std::endl;
     }
     header_out << header.str();
     return 0;

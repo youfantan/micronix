@@ -10,7 +10,9 @@ SECTIONS
 {
     .stage2 ORIGIN(FLASH) :
     {
+        _stage2_begin = .;
         KEEP(*(.stage2))
+        _stage2_end = .;
         . = 0x100;
     } > FLASH
 
@@ -52,15 +54,12 @@ SECTIONS
 
     .stack ORIGIN(RAM) + LENGTH(RAM) - 8K (NOLOAD) :
     {
-        _StackBottom = .;
+        _stack_bottom = .;
         . += 8K;
-        _StackTop = .;
+        _stack_top = .;
     } > RAM
 
-    ASSERT(_stage2_end - ADDR(.boot2) <= 252,
-           "Stage2 exceeds 252 bytes")
-    ASSERT(SIZEOF(.boot2) == 256,
-           "Boot2 must be 256 bytes")
-    ASSERT(_ram_bss_end <= _StackBottom,
-           "RAM data overlaps stack")
+    ASSERT(_stage2_end - ADDR(.stage2) <= 252, "Stage2 exceeds 252 bytes")
+    ASSERT(SIZEOF(.stage2) == 256, "Boot2 must be 256 bytes")
+    ASSERT(_ram_bss_end <= _stack_bottom, "RAM data overlaps stack")
 }

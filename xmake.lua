@@ -5,6 +5,11 @@ set_defaultarchs("arm")
 set_defaultmode("debug")
 set_languages("cxx20")
 
+local rofs_image
+function prebuild_paths(paths)
+    rofs_image = path.absolute(paths.rofs_image, os.projectdir()):gsub("\\", "/")
+end
+
 includes("xmake/env.lua")
 local sdk = sdk_paths
 set_config("vcpkg", sdk.vcpkg)
@@ -51,6 +56,7 @@ target("demoapp")
     add_cxxflags("-fno-rtti", "-fno-exceptions", "-fno-threadsafe-statics", {force = true})
 
     add_asflags("-mcpu=cortex-m0plus", "-mthumb", {force = true})
+    add_asflags('-DMICRONIX_ROFS_IMAGE_PATH="' .. rofs_image .. '"', {force = true})
 
     add_ldflags("-mcpu=cortex-m0plus", "-mthumb", "-nostdlib",
                 "-Wl,--gc-sections", "-Wl,--print-memory-usage",

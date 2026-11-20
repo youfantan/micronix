@@ -5,5 +5,5 @@
 .global luciferin_flushable_end
 
 luciferin_flushable_start:
-.incbin MICRONIX_FLUSHABLE_PATH
+.incbin MICRONIX_ROFS_IMAGE_PATH
 luciferin_flushable_end:

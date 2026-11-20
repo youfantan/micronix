@@ -4,3 +4,6 @@ sdk_paths = {
     python = "D:/SDK/python3/python.exe",
     vcpkg = "D:/SDK/vcpkg"
 }
+prebuild_paths {
+    rofs_image = "./rofs.image.bin"
+}

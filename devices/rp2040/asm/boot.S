@@ -36,7 +36,7 @@ _stage2:
 .align 2
 .global _vectors
 _vectors:
-    .word _StackTop
+    .word _stack_top
     .word Reset_Handler
     .rept 14
     .word Default_Handler
@@ -84,6 +84,7 @@ Reset_Handler:
 4:  @ Initialize Kernel
     bl clock_init
     bl kernel_entry
+Default_Handler:
 InfLoop:
     wfi
     b InfLoop
