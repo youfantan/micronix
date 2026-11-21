@@ -1,6 +1,7 @@
 target("demoapp")
 add_files("$(projectdir)/devices/rp2040/device.cpp", "$(projectdir)/devices/rp2040/asm/boot.S")
 add_files("$(projectdir)/devices/rp2040/asm/rofs.S")
+add_files("$(projectdir)/devices/rp2040/peripherals/timer.cpp")
 add_ldflags("-T$(projectdir)/devices/rp2040/link/app.ld", {force = true})
 
 on_load(function (target)

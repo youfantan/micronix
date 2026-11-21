@@ -48,6 +48,12 @@ void clock_init() {
 
     CLOCKS::CLK_REF_CTRL::SRC = 0x02;
     wait_clock(CLOCKS::CLK_REF_SELECTED::CLK_REF_SELECTED_, 0x02); // Wait CLK_REF switched to XOSC
+    constexpr u32 tick_hz = micronix::devices::rp2040::tick_frequency_hz;
+    static_assert(tick_hz > 0 && clk_cfg.osc_frequency_hz % tick_hz == 0);
+    constexpr u32 cycles = clk_cfg.osc_frequency_hz / tick_hz;
+    static_assert(cycles >= 1 && cycles <= 0x1ff);
+    WATCHDOG::TICK::Write((1u << WATCHDOG_TICK_ENABLE.off) | cycles);
+    while (!WATCHDOG::TICK::RUNNING) {}
     CLOCKS::CLK_SYS_CTRL::SRC = 0x00;
     CLOCKS::CLK_SYS_RESUS_CTRL::ENABLE = 0x00;
     wait_clock(CLOCKS::CLK_SYS_SELECTED::CLK_SYS_SELECTED_, 0x00); // Wait CLK_SYS switched to CLK_REF

@@ -2,6 +2,10 @@
 
 #include "../../include/base.h"
 
+namespace micronix::devices::rp2040 {
+    inline constexpr u32 tick_frequency_hz = 1'000'000;
+}
+
 inline constexpr u64 operator""_mhz(u64 freq) {
     return freq * 1000 * 1000;
 }

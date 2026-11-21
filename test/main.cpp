@@ -1,12 +1,14 @@
 #include <base.h>
-#include <rp2040/periphals/gpio.h>
-#include <rp2040/periphals/spi.h>
+#include <rp2040/peripherals/gpio.h>
+#include <rp2040/peripherals/spi.h>
+#include <rp2040/peripherals/timer.h>
 #include "../modules/st7735s_graphics2d_adapter.h"
 #include <subsystem/luciferin/graphics2d.h>
 void app_main() {
     using namespace micronix::peripherals;
     using namespace micronix::modules;
     using namespace micronix::luciferin;
+    using namespace micronix::devices::rp2040;
 
     constexpr static gpio_init_cfg direct_pp = {
         .type = gpio_init_cfg::_type::output_pp,
@@ -60,10 +62,15 @@ void app_main() {
                 g2d.draw_pixel(x, y, color_format_rgb565(255, 255, 255));
             }
         }
+        timer0::init();
+        auto draw_fps = [&] {
+
+        };
         while (true) {
             g2d.draw_string(10, 26, roboto_24px, micronix::utf32_string_literal(U"micronix"));
             g2d.draw_string(10, 40, roboto_12px, micronix::utf32_string_literal(U"test ascii 1234"));
             g2d.present();
+            timer0::alarm<0>({ 100 }, draw_fps);
         }
     }
 }

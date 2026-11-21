@@ -33,18 +33,60 @@ _stage2:
     bx r2 @ Jump to reset handler
     .ltorg @ Reserved area
 
+.macro vector handler
+    .weak \handler
+    .thumb_set \handler, Default_Handler
+    .word \handler
+.endm
+
 .section .vectors, "a", %progbits
 .align 2
 .global _vectors
 _vectors:
     .word _stack_top
+
     .word Reset_Handler
-    .rept 14
+    vector NMI_Handler
+    vector HardFault_Handler
+
+    .rept 7
     .word Default_Handler
     .endr
-    .rept 26
+
+    vector SVCall_Handler
+
     .word Default_Handler
-    .endr
+    .word Default_Handler
+
+    vector PendSV_Handler
+    vector SysTick_Handler
+
+    vector TIMER_IRQ_0_Handler
+    vector TIMER_IRQ_1_Handler
+    vector TIMER_IRQ_2_Handler
+    vector TIMER_IRQ_3_Handler
+    vector PWM_IRQ_WRAP_Handler
+    vector USBCTRL_IRQ_Handler
+    vector XIP_IRQ_Handler
+    vector PIO0_IRQ_0_Handler
+    vector PIO0_IRQ_1_Handler
+    vector PIO1_IRQ_0_Handler
+    vector PIO1_IRQ_1_Handler
+    vector DMA_IRQ_0_Handler
+    vector DMA_IRQ_1_Handler
+    vector IO_IRQ_BANK0_Handler
+    vector IO_IRQ_QSPI_Handler
+    vector SIO_IRQ_PROC0_Handler
+    vector SIO_IRQ_PROC1_Handler
+    vector CLOCKS_IRQ_Handler
+    vector SPI0_IRQ_Handler
+    vector SPI1_IRQ_Handler
+    vector UART0_IRQ_Handler
+    vector UART1_IRQ_Handler
+    vector ADC_IRQ_FIFO_Handler
+    vector I2C0_IRQ_Handler
+    vector I2C1_IRQ_Handler
+    vector RTC_IRQ_Handler
 
 .section .text, "ax", %progbits
 .thumb_func
@@ -84,6 +126,7 @@ Reset_Handler:
     b 3b
 4:  @ Initialize Kernel
     bl clock_init
+    cpsie i
     bl kernel_entry
 .thumb_func
 Default_Handler:

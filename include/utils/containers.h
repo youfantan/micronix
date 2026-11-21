@@ -158,3 +158,40 @@ public:
         return success_;
     }
 };
+
+struct function_ref {
+    using call = void(*)(const void*);
+
+    const void* iv_ptr_;
+    call iv_call_;
+
+    function_ref() : iv_ptr_(), iv_call_() {}
+
+    template<typename F>
+    function_ref(const F& f) : iv_ptr_(reinterpret_cast<const void*>(&f)), iv_call_([](const void* iv_ptr) {
+        (*static_cast<const F*>(iv_ptr))();
+    }) {}
+
+    function_ref(function_ref& other) = default;
+    function_ref(function_ref&& other) = default;
+    function_ref& operator=(const function_ref& other) = default;
+    function_ref& operator=(function_ref&& other) = default;
+
+    template<typename F>
+    void bind(const F& f) {
+        iv_ptr_ = reinterpret_cast<const void*>(&f);
+        iv_call_ = [](const void* iv_ptr) {
+            (*static_cast<const F*>(iv_ptr))();
+        };
+    }
+
+    void operator()() const {
+        if (iv_ptr_ != nullptr && iv_call_ != nullptr) {
+            iv_call_(iv_ptr_);
+        }
+    }
+
+    operator bool() const {
+        return iv_ptr_ != nullptr && iv_call_ != nullptr;
+    }
+};
